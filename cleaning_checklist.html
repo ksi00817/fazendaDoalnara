@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시설설비 청소 체크리스트 작성 도구</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 테마: 청결과 안전을 상징하는 Teal/Green 계열 */
+            --accent-color: #0d9488; /* Teal 600 */
+            --accent-color-light: #ccfbf1; /* Teal 100 */
+            --accent-color-start: #14b8a6; /* Teal 500 */
+            --accent-color-end: #0f766e; /* Teal 700 */
+            
+            /* 헤더 배경 이미지 변수 (JS로 동적 제어 가능) */
+            --header-bg-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=1000&auto=format&fit=crop'); 
+            --header-bg-position: center center;
+            --header-bg-size: cover;
+            --header-bg-opacity: 0.15;
+            --header-mix-blend-mode: overlay;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        /* 카드형 섹션 디자인 */
+        .material-section {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 헤더 그라디언트 및 배경 이미지 */
+        .gradient-header-bg {
+            background: linear-gradient(135deg, var(--accent-color-start), var(--accent-color-end));
+            position: relative;
+            overflow: hidden;
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .gradient-header-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--header-bg-image);
+            background-position: var(--header-bg-position);
+            background-size: var(--header-bg-size);
+            opacity: var(--header-bg-opacity);
+            mix-blend-mode: var(--header-mix-blend-mode);
+            pointer-events: none;
+        }
+
+        /* 섹션 제목 스타일 */
+        .section-heading {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-weight: 700;
+            color: var(--accent-color-end);
+            border-bottom: 2px solid var(--accent-color-light);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-heading i {
+            margin-right: 0.5rem;
+            color: var(--accent-color);
+        }
+
+        /* 강조 테두리 */
+        .accent-border {
+            border-left: 4px solid var(--accent-color);
+            padding-left: 1rem;
+            background-color: var(--accent-color-light);
+        }
+
+        /* 인쇄 설정 (@media print) */
+        @media print {
+            @page { margin: 10mm; size: A4 portrait; }
+            
+            body {
+                background-color: white;
+                font-size: 11pt;
+                line-height: 1.4;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+
+            .material-section {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+                padding: 10mm !important;
+                margin: 0 !important;
+                break-inside: avoid;
+            }
+
+            .gradient-header-bg {
+                background: linear-gradient(135deg, var(--accent-color-start), var(--accent-color-end)) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .gradient-header-bg::before {
+                opacity: 0.2 !important; 
+                mix-blend-mode: normal !important; /* 인쇄 호환성 */
+                background-image: var(--header-bg-image) !important;
+            }
+            
+            /* 인쇄 시 입력 폼 대신 텍스트로 보이게 조정 */
+            input, textarea, select {
+                border: none !important;
+                background: transparent !important;
+                resize: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+        
+        <div class="lg:w-1/3 no-print">
+            <div class="bg-white rounded-lg shadow-lg p-6 sticky top-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-xl font-bold text-gray-800">📝 입력 패널</h1>
+                    <div class="space-x-2">
+                        <button id="clearFormButton" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="초기화">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <form id="documentForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">문서 제목</label>
+                        <input type="text" id="docTitle" class="w-full border rounded p-2 focus:ring-2 focus:ring-teal-500" value="시설설비 청소 체크리스트">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">작성일자</label>
+                            <input type="date" id="checkDate" class="w-full border rounded p-2 focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">점검자</label>
+                            <input type="text" id="inspector" class="w-full border rounded p-2 focus:ring-2 focus:ring-teal-500" placeholder="예: 김안전 주임">
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4 mt-2">
+                        <h3 class="text-sm font-bold text-gray-600 mb-2">설비 정보</h3>
+                        <div class="space-y-2">
+                            <input type="text" id="equipName" class="w-full border rounded p-2" placeholder="예: CNC 가공기 3호기">
+                            <input type="text" id="equipLoc" class="w-full border rounded p-2" placeholder="예: 제2공장 A구역">
+                            <input type="text" id="equipId" class="w-full border rounded p-2" placeholder="예: FAC-2024-003">
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4 mt-2">
+                        <h3 class="text-sm font-bold text-gray-600 mb-2">점검 항목 상태</h3>
+                        <p class="text-xs text-gray-500 mb-2">* 세부 내용은 우측 미리보기에서 직접 수정 가능합니다.</p>
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center"><input type="checkbox" id="check1" class="mr-2" checked> 전원 차단 및 안전 조치</label>
+                            <label class="flex items-center"><input type="checkbox" id="check2" class="mr-2" checked> 설비 내부 이물질 제거</label>
+                            <label class="flex items-center"><input type="checkbox" id="check3" class="mr-2" checked> 구동부 윤활유 상태</label>
+                            <label class="flex items-center"><input type="checkbox" id="check4" class="mr-2"> 주변 정리정돈 및 폐기물 처리</label>
+                            <label class="flex items-center"><input type="checkbox" id="check5" class="mr-2" checked> 안전 커버 및 센서 정상작동</label>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4 mt-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">종합 의견 / 특이사항</label>
+                        <textarea id="remarks" rows="3" class="w-full border rounded p-2" placeholder="예: 윤활유 보충 필요. 필터 교체 완료."></textarea>
+                    </div>
+
+                    <div class="pt-4 flex flex-col gap-2">
+                        <div class="flex gap-2">
+                            <button type="button" id="saveFileButton" class="flex-1 bg-gray-600 text-white py-2 rounded hover:bg-gray-700 transition">
+                                <i class="fas fa-download mr-1"></i> 데이터 저장
+                            </button>
+                            <label class="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 transition text-center cursor-pointer">
+                                <i class="fas fa-upload mr-1"></i> 데이터 불러오기
+                                <input type="file" id="loadFile" accept=".json" class="hidden">
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center">작성 중인 내용은 자동 저장됩니다.</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:w-2/3 w-full">
+            <div class="flex justify-between items-center mb-4 no-print">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-file-invoice text-teal-600 mr-2"></i> 미리보기
+                </h2>
+                <button onclick="window.print()" class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition shadow-md">
+                    <i class="fas fa-print mr-2"></i> PDF 저장 / 인쇄
+                </button>
+            </div>
+
+            <div id="documentOutput" class="material-section min-h-[297mm] relative">
+                
+                <div class="gradient-header-bg mb-8 rounded-lg shadow-sm">
+                    <div class="relative z-10 flex justify-between items-end">
+                        <div>
+                            <p class="text-teal-100 text-sm mb-1 tracking-wider">Facility Maintenance Form</p>
+                            <h1 id="previewTitle" class="text-3xl font-bold font-serif">시설설비 청소 체크리스트</h1>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded text-sm border border-white/30">
+                                <span class="block text-teal-50 opacity-80 text-xs">문서번호</span>
+                                <span id="previewDocId" class="font-mono font-bold">FAC-2024-001</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="section-heading text-lg"><i class="fas fa-info-circle"></i> 기본 정보</h3>
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <tr>
+                            <th class="border border-gray-300 bg-gray-50 p-2 w-1/6">점검일자</th>
+                            <td class="border border-gray-300 p-2" id="previewDate">2024. 01. 01</td>
+                            <th class="border border-gray-300 bg-gray-50 p-2 w-1/6">점검자</th>
+                            <td class="border border-gray-300 p-2" id="previewInspector">홍길동</td>
+                        </tr>
+                        <tr>
+                            <th class="border border-gray-300 bg-gray-50 p-2">설비명</th>
+                            <td class="border border-gray-300 p-2" id="previewEquipName"></td>
+                            <th class="border border-gray-300 bg-gray-50 p-2">관리번호</th>
+                            <td class="border border-gray-300 p-2" id="previewEquipId"></td>
+                        </tr>
+                        <tr>
+                            <th class="border border-gray-300 bg-gray-50 p-2">설치장소</th>
+                            <td class="border border-gray-300 p-2" colspan="3" id="previewEquipLoc"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="section-heading text-lg"><i class="fas fa-tasks"></i> 세부 점검 항목</h3>
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="bg-teal-50 text-teal-800">
+                                <th class="border border-gray-300 p-2 w-12 text-center">No</th>
+                                <th class="border border-gray-300 p-2 w-1/4">점검 구분</th>
+                                <th class="border border-gray-300 p-2">점검 내용</th>
+                                <th class="border border-gray-300 p-2 w-16 text-center">결과</th>
+                                <th class="border border-gray-300 p-2 w-1/4">비고</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checklistBody">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="section-heading text-lg"><i class="fas fa-comment-alt"></i> 종합 의견 및 특이사항</h3>
+                    <div id="previewRemarks" class="w-full border border-gray-300 rounded p-4 min-h-[100px] bg-gray-50 text-sm whitespace-pre-wrap"></div>
+                </div>
+
+                <div class="mt-12 flex justify-end">
+                    <table class="border-collapse border border-gray-400 text-center text-sm w-64">
+                        <tr>
+                            <th rowspan="2" class="border border-gray-400 bg-gray-100 p-2 w-8 writing-vertical">결<br>재</th>
+                            <th class="border border-gray-400 p-1 w-1/2">담 당</th>
+                            <th class="border border-gray-400 p-1 w-1/2">팀 장</th>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-400 h-16 align-bottom pb-2">
+                                <span id="sign1" class="text-gray-400 text-xs">(서명)</span>
+                            </td>
+                            <td class="border border-gray-400 h-16 align-bottom pb-2">
+                                <span class="text-gray-400 text-xs">(서명)</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="mt-8 text-center text-xs text-gray-400 border-t pt-4">
+                    <p>본 양식은 시설설비 유지보수 규정에 의거하여 작성되었습니다.</p>
+                    <p class="font-mono mt-1" id="printTimestamp"></p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const formId = "facilityCleaningForm";
+
+        // 초기 데이터 (localStorage가 비어있을 때 사용)
+        const initialChecklist = [
+            { category: "안전 조치", content: "메인 전원 차단 및 잠금 장치(LOTO) 확인", key: "check1" },
+            { category: "내부 청소", content: "설비 내부 칩(Chip), 분진, 이물질 제거 상태", key: "check2" },
+            { category: "구동부 점검", content: "LM가이드, 볼스크류 등 구동부 윤활 상태 확인", key: "check3" },
+            { category: "주변 환경", content: "설비 주변 바닥 오염 및 폐기물 분리 수거 상태", key: "check4" },
+            { category: "안전 장치", content: "안전 커버, 비상 정지 버튼, 센서 정상 작동 여부", key: "check5" }
+        ];
+
+        // 1. Placeholder Tab 기능
+        function setupInputPlaceholders() {
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                if (input.placeholder) {
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Tab' && !this.value) {
+                            e.preventDefault();
+                            this.value = this.placeholder.replace('예: ', '');
+                            generateDocument();
+                        }
+                    });
+                }
+            });
+        }
+
+        // 2. 문서 생성 (미리보기 업데이트)
+        function generateDocument() {
+            // 입력값 가져오기
+            const title = document.getElementById('docTitle').value || "시설설비 청소 체크리스트";
+            const date = document.getElementById('checkDate').value;
+            const inspector = document.getElementById('inspector').value;
+            const equipName = document.getElementById('equipName').value;
+            const equipLoc = document.getElementById('equipLoc').value;
+            const equipId = document.getElementById('equipId').value;
+            const remarks = document.getElementById('remarks').value;
+
+            // 미리보기에 적용
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewDate').textContent = date || new Date().toISOString().split('T')[0];
+            document.getElementById('previewInspector').textContent = inspector;
+            document.getElementById('sign1').textContent = inspector ? inspector : "(서명)";
+            document.getElementById('sign1').classList.remove('text-gray-400', 'text-xs'); // 서명 스타일 변경
+            if(!inspector) document.getElementById('sign1').classList.add('text-gray-400', 'text-xs');
+
+            document.getElementById('previewEquipName').textContent = equipName;
+            document.getElementById('previewEquipLoc').textContent = equipLoc;
+            document.getElementById('previewEquipId').textContent = equipId;
+            document.getElementById('previewDocId').textContent = equipId ? equipId : "DOC-" + new Date().getFullYear();
+            document.getElementById('previewRemarks').textContent = remarks;
+
+            // 체크리스트 테이블 생성
+            const tbody = document.getElementById('checklistBody');
+            tbody.innerHTML = '';
+            
+            initialChecklist.forEach((item, index) => {
+                const isChecked = document.getElementById(item.key).checked;
+                const row = document.createElement('tr');
+                row.className = "border-b border-gray-200 hover:bg-gray-50";
+                
+                row.innerHTML = `
+                    <td class="p-2 text-center text-gray-500">${index + 1}</td>
+                    <td class="p-2 font-medium text-gray-700 border-r border-gray-200">${item.category}</td>
+                    <td class="p-2 text-gray-800">${item.content}</td>
+                    <td class="p-2 text-center border-l border-gray-200">
+                        <span class="${isChecked ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}">
+                            ${isChecked ? '양호' : '불량'}
+                        </span>
+                    </td>
+                    <td class="p-2 border-l border-gray-200 text-gray-500 text-xs" contenteditable="true">
+                        (특이사항 없음)
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // 타임스탬프 업데이트
+            const now = new Date();
+            document.getElementById('printTimestamp').textContent = `Printed at: ${now.toLocaleString('ko-KR')}`;
+        }
+
+        // 3. LocalStorage 저장/로드
+        function saveFormDataToLocalStorage() {
+            const data = {
+                title: document.getElementById('docTitle').value,
+                date: document.getElementById('checkDate').value,
+                inspector: document.getElementById('inspector').value,
+                equipName: document.getElementById('equipName').value,
+                equipLoc: document.getElementById('equipLoc').value,
+                equipId: document.getElementById('equipId').value,
+                remarks: document.getElementById('remarks').value,
+                checks: {}
+            };
+            
+            initialChecklist.forEach(item => {
+                data.checks[item.key] = document.getElementById(item.key).checked;
+            });
+
+            localStorage.setItem(formId, JSON.stringify(data));
+        }
+
+        function loadFormDataFromLocalStorage() {
+            const stored = localStorage.getItem(formId);
+            if (stored) {
+                const data = JSON.parse(stored);
+                document.getElementById('docTitle').value = data.title || "";
+                document.getElementById('checkDate').value = data.date || "";
+                document.getElementById('inspector').value = data.inspector || "";
+                document.getElementById('equipName').value = data.equipName || "";
+                document.getElementById('equipLoc').value = data.equipLoc || "";
+                document.getElementById('equipId').value = data.equipId || "";
+                document.getElementById('remarks').value = data.remarks || "";
+                
+                if(data.checks) {
+                    for (const [key, value] of Object.entries(data.checks)) {
+                        const el = document.getElementById(key);
+                        if(el) el.checked = value;
+                    }
+                }
+                generateDocument();
+            } else {
+                // 기본값 설정 (오늘 날짜)
+                document.getElementById('checkDate').valueAsDate = new Date();
+                generateDocument();
+            }
+        }
+
+        function clearForm() {
+            if(confirm("모든 입력 내용을 초기화하시겠습니까?")) {
+                localStorage.removeItem(formId);
+                document.getElementById('documentForm').reset();
+                document.getElementById('checkDate').valueAsDate = new Date();
+                generateDocument();
+            }
+        }
+
+        // 4. 파일 저장/불러오기
+        function downloadDataFile() {
+            const title = document.getElementById('docTitle').value;
+            const date = document.getElementById('checkDate').value || new Date().toISOString().slice(0,10);
+            
+            const data = JSON.parse(localStorage.getItem(formId) || "{}"); // 현재 저장된 상태 가져오기
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `${title}_${date}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function uploadDataFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // 데이터 매핑
+                    document.getElementById('docTitle').value = data.title || "";
+                    document.getElementById('checkDate').value = data.date || "";
+                    document.getElementById('inspector').value = data.inspector || "";
+                    document.getElementById('equipName').value = data.equipName || "";
+                    document.getElementById('equipLoc').value = data.equipLoc || "";
+                    document.getElementById('equipId').value = data.equipId || "";
+                    document.getElementById('remarks').value = data.remarks || "";
+                    
+                    if(data.checks) {
+                        for (const [key, value] of Object.entries(data.checks)) {
+                            const el = document.getElementById(key);
+                            if(el) el.checked = value;
+                        }
+                    }
+
+                    saveFormDataToLocalStorage();
+                    generateDocument();
+                    alert("데이터를 성공적으로 불러왔습니다.");
+                } catch (error) {
+                    alert("파일 형식이 올바르지 않습니다.");
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 초기화 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', function() {
+            setupInputPlaceholders();
+            loadFormDataFromLocalStorage();
+
+            // 입력 필드 변경 시 자동 저장 및 갱신
+            const formElements = document.querySelectorAll('#documentForm input, #documentForm textarea');
+            formElements.forEach(element => {
+                element.addEventListener('input', () => {
+                    saveFormDataToLocalStorage();
+                    generateDocument();
+                });
+                element.addEventListener('change', () => {
+                    saveFormDataToLocalStorage();
+                    generateDocument();
+                });
+            });
+
+            // 버튼 이벤트
+            document.getElementById('clearFormButton').addEventListener('click', clearForm);
+            document.getElementById('saveFileButton').addEventListener('click', downloadDataFile);
+            document.getElementById('loadFile').addEventListener('change', uploadDataFile);
+
+            // 폼 제출 방지
+            document.getElementById('documentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                generateDocument();
+            });
+        });
+    </script>
+</body>
+</html>
