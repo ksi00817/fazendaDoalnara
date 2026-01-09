@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>모바일 시설 점검표</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d9488; /* Teal 600 */
+            --primary-bg: #f0fdfa; /* Teal 50 */
+            --safe: #16a34a; /* Green */
+            --danger: #dc2626; /* Red */
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            padding-bottom: 80px; /* 하단 탭 공간 확보 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 탭 전환 로직 */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 모바일 입력 필드 스타일 */
+        .mobile-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px; /* 모바일 줌 방지 */
+            background-color: white;
+            transition: all 0.2s;
+        }
+        .mobile-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+            outline: none;
+        }
+
+        /* 커스텀 체크박스 (터치용) */
+        .check-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .check-toggle {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background-color: #e5e7eb;
+            border-radius: 20px;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .check-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .check-toggle { background-color: var(--safe); }
+        input:checked + .check-toggle::after { transform: translateX(22px); }
+
+        /* 하단 네비게이션 바 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 50;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            color: #9ca3af;
+            width: 33%;
+            cursor: pointer;
+        }
+
+        .nav-item i { font-size: 20px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+
+        /* A4 미리보기 스타일 (화면상 축소) */
+        #previewContainer {
+            background: #525252;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        
+        .a4-paper {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            /* 모바일 화면에 맞게 축소 */
+            transform-origin: top center;
+            transform: scale(0.45); 
+        }
+
+        /* 인쇄 설정 (PDF 저장 시) */
+        @media print {
+            body { 
+                background: white; 
+                padding: 0; 
+                overflow: visible;
+            }
+            .no-print, .bottom-nav, #inputTab { display: none !important; }
+            #previewTab { display: block !important; }
+            #previewContainer { background: white; padding: 0; }
+            
+            .a4-paper {
+                width: 100%;
+                margin: 0;
+                padding: 10mm;
+                box-shadow: none;
+                transform: none !important; /* 축소 해제 */
+                border: none;
+            }
+            
+            /* 인쇄 시 폰트 조정 */
+            * { font-size: 11pt; }
+            h1 { font-size: 22pt; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="bg-white p-4 sticky top-0 z-40 shadow-sm flex justify-between items-center no-print">
+        <h1 class="text-lg font-bold text-gray-800">
+            <i class="fas fa-clipboard-check text-teal-600 mr-2"></i>시설점검
+        </h1>
+        <button onclick="resetForm()" class="text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-full">
+            <i class="fas fa-redo mr-1"></i>초기화
+        </button>
+    </header>
+
+    <div id="inputTab" class="tab-content active p-4 max-w-md mx-auto">
+        
+        <div class="bg-white rounded-2xl p-5 shadow-sm mb-4 border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">기본 정보</h2>
+            <div class="space-y-3">
+                <input type="date" id="checkDate" class="mobile-input">
+                <input type="text" id="inspector" class="mobile-input" placeholder="점검자 이름">
+                <input type="text" id="equipName" class="mobile-input" placeholder="설비명 (예: CNC 1호기)">
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm mb-4 border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">점검 체크리스트</h2>
+            
+            <label class="check-card">
+                <div>
+                    <div class="font-bold text-gray-800">전원 및 안전장치</div>
+                    <div class="text-xs text-gray-500 mt-1">LOTO 및 비상정지 버튼 확인</div>
+                </div>
+                <input type="checkbox" id="check1" class="hidden" checked>
+                <div class="check-toggle"></div>
+            </label>
+
+            <label class="check-card">
+                <div>
+                    <div class="font-bold text-gray-800">내부 이물질 제거</div>
+                    <div class="text-xs text-gray-500 mt-1">칩, 분진, 오일 제거 상태</div>
+                </div>
+                <input type="checkbox" id="check2" class="hidden" checked>
+                <div class="check-toggle"></div>
+            </label>
+
+            <label class="check-card">
+                <div>
+                    <div class="font-bold text-gray-800">윤활 및 구동부</div>
+                    <div class="text-xs text-gray-500 mt-1">오일 레벨 및 구동 소음 확인</div>
+                </div>
+                <input type="checkbox" id="check3" class="hidden" checked>
+                <div class="check-toggle"></div>
+            </label>
+
+            <label class="check-card">
+                <div>
+                    <div class="font-bold text-gray-800">주변 정리정돈</div>
+                    <div class="text-xs text-gray-500 mt-1">통행로 확보 및 폐기물 처리</div>
+                </div>
+                <input type="checkbox" id="check4" class="hidden">
+                <div class="check-toggle"></div>
+            </label>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 shadow-sm mb-20 border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">특이사항 메모</h2>
+            <textarea id="remarks" rows="3" class="mobile-input" placeholder="특이사항이나 수리 필요 내역을 적어주세요."></textarea>
+        </div>
+    </div>
+
+    <div id="previewTab" class="tab-content">
+        <div class="no-print bg-gray-100 p-3 text-center sticky top-0 z-30">
+            <p class="text-xs text-gray-500 mb-2">아래는 A4 출력 미리보기입니다</p>
+            <button onclick="window.print()" class="bg-teal-600 text-white w-full py-3 rounded-xl font-bold shadow-lg text-lg">
+                <i class="fas fa-file-pdf mr-2"></i>PDF로 저장하기
+            </button>
+        </div>
+
+        <div id="previewContainer">
+            <div class="a4-paper">
+                <div class="border-b-4 border-teal-600 pb-4 mb-6">
+                    <div class="flex justify-between items-end">
+                        <h1 class="text-3xl font-bold text-gray-800">시설설비 청소 점검표</h1>
+                        <span id="p_date" class="text-gray-600 font-mono text-lg">2024-01-01</span>
+                    </div>
+                </div>
+
+                <table class="w-full border-collapse border border-gray-400 mb-6 text-sm">
+                    <tr>
+                        <th class="bg-gray-100 border border-gray-400 p-2 w-1/4">설비명</th>
+                        <td id="p_equipName" class="border border-gray-400 p-2 font-bold text-lg"></td>
+                    </tr>
+                    <tr>
+                        <th class="bg-gray-100 border border-gray-400 p-2">점검자</th>
+                        <td id="p_inspector" class="border border-gray-400 p-2"></td>
+                    </tr>
+                </table>
+
+                <h3 class="font-bold text-lg mb-2 border-l-4 border-teal-600 pl-2">점검 항목</h3>
+                <table class="w-full border-collapse border border-gray-400 mb-6">
+                    <thead class="bg-teal-50">
+                        <tr>
+                            <th class="border border-gray-400 p-2 w-3/4 text-left">점검 내용</th>
+                            <th class="border border-gray-400 p-2 text-center">결과</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p_list">
+                        </tbody>
+                </table>
+
+                <h3 class="font-bold text-lg mb-2 border-l-4 border-teal-600 pl-2">특이사항</h3>
+                <div id="p_remarks" class="border border-gray-400 rounded p-4 min-h-[150px] whitespace-pre-wrap text-sm"></div>
+
+                <div class="mt-12 flex justify-end">
+                    <div class="text-center">
+                        <div class="border-b border-gray-400 w-32 mb-2 pb-10">
+                            <span id="p_sign" class="font-script text-2xl"></span>
+                        </div>
+                        <p class="text-sm">관리자 서명</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav no-print">
+        <div class="nav-item active" onclick="switchTab('inputTab', this)">
+            <i class="fas fa-pen"></i>
+            <span>작성하기</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('previewTab', this)">
+            <i class="fas fa-file-alt"></i>
+            <span>결과확인</span>
+        </div>
+    </nav>
+
+    <script>
+        // 1. 탭 전환 기능
+        function switchTab(tabId, el) {
+            // 탭 컨텐츠 숨기기/보이기
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            // 네비게이션 스타일 변경
+            if(el) {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                el.classList.add('active');
+            }
+
+            // 미리보기 탭으로 갈 때 문서 생성
+            if (tabId === 'previewTab') {
+                generatePreview();
+            }
+        }
+
+        // 2. 미리보기 생성 로직
+        function generatePreview() {
+            // 데이터 가져오기
+            const date = document.getElementById('checkDate').value;
+            const inspector = document.getElementById('inspector').value;
+            const equipName = document.getElementById('equipName').value;
+            const remarks = document.getElementById('remarks').value;
+
+            // 데이터 적용
+            document.getElementById('p_date').textContent = date;
+            document.getElementById('p_inspector').textContent = inspector;
+            document.getElementById('p_sign').textContent = inspector; // 서명란에 이름 자동 기입
+            document.getElementById('p_equipName').textContent = equipName;
+            document.getElementById('p_remarks').textContent = remarks || "특이사항 없음";
+
+            // 체크리스트 생성
+            const listData = [
+                { id: 'check1', text: '전원 차단 및 잠금장치(LOTO) 안전 조치' },
+                { id: 'check2', text: '설비 내부 칩(Chip), 분진, 이물질 제거' },
+                { id: 'check3', text: '구동부 윤활유 상태 및 오일 누유 확인' },
+                { id: 'check4', text: '주변 통행로 확보 및 폐기물 분리 배출' }
+            ];
+
+            const tbody = document.getElementById('p_list');
+            tbody.innerHTML = '';
+
+            listData.forEach(item => {
+                const isChecked = document.getElementById(item.id).checked;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="border border-gray-400 p-3 text-sm">${item.text}</td>
+                    <td class="border border-gray-400 p-3 text-center font-bold ${isChecked ? 'text-blue-600' : 'text-red-500'}">
+                        ${isChecked ? 'O' : 'X'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 화면 크기에 따른 A4 용지 스케일 조정 (모바일에서 전체 보기)
+            adjustScale();
+        }
+
+        function adjustScale() {
+            const paper = document.querySelector('.a4-paper');
+            const containerWidth = window.innerWidth;
+            // 화면 너비에 맞춰 축소 비율 계산 (여백 고려)
+            const scale = (containerWidth - 20) / 210 / 3.78; // 210mm -> px 변환 근사치
+            // 너무 작아지거나 커지지 않게 제한 (모바일 보기용)
+            if(window.innerWidth < 800) {
+                 paper.style.transform = `scale(${Math.min(scale, 0.45)})`;
+            } else {
+                 paper.style.transform = 'scale(0.8)';
+            }
+        }
+
+        // 3. 자동 저장/로드
+        function saveToLocal() {
+            const data = {
+                date: document.getElementById('checkDate').value,
+                inspector: document.getElementById('inspector').value,
+                equipName: document.getElementById('equipName').value,
+                remarks: document.getElementById('remarks').value,
+                c1: document.getElementById('check1').checked,
+                c2: document.getElementById('check2').checked,
+                c3: document.getElementById('check3').checked,
+                c4: document.getElementById('check4').checked
+            };
+            localStorage.setItem('mobileCheckData', JSON.stringify(data));
+        }
+
+        function loadFromLocal() {
+            const saved = localStorage.getItem('mobileCheckData');
+            if(saved) {
+                const data = JSON.parse(saved);
+                document.getElementById('checkDate').value = data.date;
+                document.getElementById('inspector').value = data.inspector;
+                document.getElementById('equipName').value = data.equipName;
+                document.getElementById('remarks').value = data.remarks;
+                document.getElementById('check1').checked = data.c1;
+                document.getElementById('check2').checked = data.c2;
+                document.getElementById('check3').checked = data.c3;
+                document.getElementById('check4').checked = data.c4;
+            } else {
+                document.getElementById('checkDate').valueAsDate = new Date();
+            }
+        }
+
+        function resetForm() {
+            if(confirm('작성 내용을 모두 지우시겠습니까?')) {
+                localStorage.removeItem('mobileCheckData');
+                location.reload();
+            }
+        }
+
+        // 초기화
+        window.onload = function() {
+            loadFromLocal();
+            // 입력할 때마다 자동 저장
+            document.querySelectorAll('input, textarea').forEach(el => {
+                el.addEventListener('change', saveToLocal);
+            });
+            window.addEventListener('resize', adjustScale);
+        };
+    </script>
+</body>
+</html>
