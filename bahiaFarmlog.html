@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>바이야 영농일지 (GAS 연동) 🌿</title>
+    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <!-- 🟢 [추가] Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- 🟢 [추가] PDF 생성을 위한 html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         /* 기본 폰트 및 테마 설정 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
@@ -50,23 +58,21 @@
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 인쇄 설정 */
-        @media print { body { padding-bottom: 0; background-color: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .no-print, .bottom-nav, #input-tab-content { display: none !important; } #output-tab-content { display: block !important; } .material-section { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; } .gradient-header-bg { background: linear-gradient(135deg, #10B981, #047857) !important; -webkit-print-color-adjust: exact !important; } .gradient-header-bg::before { opacity: 0.1 !important; mix-blend-mode: normal !important; } }
-        
         /* 테이블 스타일 */
         .journal-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .journal-table th, .journal-table td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; }
         .journal-table th { background-color: #f3f4f6; color: #374151; font-weight: 600; width: 30%; }
         
         /* 로딩 스피너 */
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 100; display: none; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; display: none; color: white; font-weight: bold; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
+        <span id="loadingText">처리중입니다...</span>
     </div>
 
     <!-- 헤더 영역 -->
@@ -126,7 +132,7 @@
                     </div>
                 </div>
 
-                <!-- 2. 작업 상세 (기존과 동일) -->
+                <!-- 2. 작업 상세 -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-tractor"></i> 작업 상세</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -145,7 +151,7 @@
                     </div>
                 </div>
 
-                <!-- 3. 투입 자원 (기존과 동일) -->
+                <!-- 3. 투입 자원 -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-users"></i> 투입 자원</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -164,7 +170,7 @@
                     </div>
                 </div>
 
-                <!-- 4. 장비 및 메모 (기존과 동일) -->
+                <!-- 4. 장비 및 메모 -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-tools"></i> 기타 정보</div>
                     <div class="grid grid-cols-1 gap-4">
@@ -189,9 +195,16 @@
         <div id="output-tab-content" class="tab-content">
             <div class="flex justify-between items-center mb-4 no-print">
                 <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-file-alt text-green-600 mr-2"></i>일지 미리보기</h2>
-                <button onclick="window.print()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 shadow-md transition duration-300"><i class="fas fa-print mr-2"></i>PDF 저장</button>
+                
+                <!-- 🟢 [변경] onclick 이벤트 수정: window.print() -> sharePdfViaTelegram() -->
+                <button onclick="sharePdfViaTelegram()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 shadow-md transition duration-300 flex items-center">
+                    <i class="fas fa-share-alt mr-2"></i>
+                    <span>PDF 공유/저장</span>
+                </button>
             </div>
-            <div id="document-output" class="material-section document-output border-2 border-green-600"></div>
+            
+            <!-- 출력 영역 (ID: document-output) -->
+            <div id="document-output" class="material-section document-output border-2 border-green-600 bg-white p-4"></div>
         </div>
     </div>
 
@@ -207,6 +220,68 @@
 
         const formId = 'documentForm';
         const storageKey = 'bahiya_journal_v2';
+        
+        // 텔레그램 앱 초기화
+        const tg = window.Telegram?.WebApp;
+        if(tg) {
+            tg.expand(); // 앱 실행 시 전체 화면 확장
+        }
+
+        // 🟢 [추가] PDF 생성 및 공유 함수 (텔레그램/모바일 지원)
+        function sharePdfViaTelegram() {
+            const element = document.getElementById('document-output');
+            const loading = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            
+            loading.style.display = 'flex';
+            loadingText.innerText = 'PDF 생성 중...';
+
+            // 입력된 날짜 가져오기 (파일명용)
+            const inputDate = document.getElementById('inputDate').value || '날짜미상';
+            const fileName = `바이야_영농일지_${inputDate}.pdf`;
+
+            // html2pdf 옵션 설정
+            const opt = {
+                margin:       5, // 여백 (mm)
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true }, // scale: 해상도 2배, useCORS: 이미지 로딩 허용
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // PDF 생성 시작
+            html2pdf().set(opt).from(element).output('blob').then(function(blob) {
+                const file = new File([blob], fileName, { type: "application/pdf" });
+
+                // 브라우저 공유 API (모바일/텔레그램 미니앱 지원)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    loadingText.innerText = '공유창을 여는 중...';
+                    navigator.share({
+                        files: [file],
+                        title: '바이야 영농일지',
+                        text: `${inputDate} 영농일지 파일입니다.`
+                    }).then(() => {
+                        loading.style.display = 'none';
+                    }).catch((error) => {
+                        console.log('공유 실패:', error);
+                        loading.style.display = 'none';
+                        // 공유 취소 등의 에러는 무시하거나 알림
+                    });
+                } else {
+                    // 공유 API 미지원 환경(PC 등)에서는 다운로드로 대체
+                    loadingText.innerText = '파일 다운로드 중...';
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = fileName;
+                    link.click();
+                    loading.style.display = 'none';
+                }
+            }).catch(err => {
+                console.error(err);
+                alert('PDF 생성 중 오류가 발생했습니다.');
+                loading.style.display = 'none';
+            });
+        }
 
         // 탭 전환
         function switchTab(tabName) {
@@ -255,9 +330,10 @@
             }
             
             const loading = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
             loading.style.display = 'flex';
+            loadingText.innerText = '구글 시트로 전송 중...';
 
-            // 전송할 데이터 객체 생성
             const payload = {
                 '날짜': document.getElementById('inputDate').value,
                 '지번': document.getElementById('inputAddress').value,
