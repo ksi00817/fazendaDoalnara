@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>바이야 영농일지 (GAS 연동) 🌿</title>
+    <title>바이야 영농일지 (v4) 🌿</title>
     <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
-    <!-- 🟢 [추가] Telegram Web App SDK -->
+    <!-- Telegram Web App SDK & html2pdf -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- 🟢 [추가] PDF 생성을 위한 html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        /* 기본 폰트 및 테마 설정 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
 
@@ -45,9 +43,27 @@
         /* 입력 폼 스타일 */
         label { font-weight: 600; color: #374151; margin-bottom: 0.25rem; display: block; font-size: 0.95rem; }
         input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem; transition: all 0.2s; background-color: #f9fafb; appearance: none; }
-        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-light); background-color: white; }
         
+        /* 🟢 [수정] 숫자 입력칸 화살표(Spinner) 강제 활성화 */
+        input[type="number"] {
+            -webkit-appearance: auto !important;
+            -moz-appearance: auto !important;
+            appearance: auto !important;
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: inner-spin-button !important;
+            opacity: 1 !important;
+            height: auto;
+        }
+
+        /* 체크박스 그리드 스타일 */
+        .checkbox-label { display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background-color: #f9fafb; transition: all 0.2s; font-size: 0.9rem; }
+        .checkbox-label:hover { background-color: #f0fdf4; border-color: var(--accent-color); }
+        .checkbox-label input:checked + span { color: var(--accent-color); font-weight: bold; }
+        .checkbox-input { width: 1rem; height: 1rem; margin-right: 0.3rem; cursor: pointer; accent-color: var(--accent-color); }
+
         /* 하단 내비게이션 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; z-index: 50; height: 70px; }
         .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #6b7280; font-weight: 500; font-size: 0.9rem; transition: all 0.3s; border-top: 3px solid transparent; }
@@ -105,29 +121,43 @@
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-calendar-day"></i> 기본 정보</div>
                     <div class="grid grid-cols-1 gap-4">
+                        <!-- 날짜 -->
                         <div>
                             <label for="inputDate">날짜</label>
                             <input type="date" id="inputDate" name="date" class="w-full">
                         </div>
+
+                        <!-- 날씨 (체크박스) -->
                         <div>
-                            <label for="inputAddress">지번 (필지번호) 선택</label>
-                            <select id="inputAddress" class="w-full h-12 border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50">
-                                <option value="" disabled selected>필지번호를 선택하세요</option>
-                                <option value="A01">A01</option>
-                                <option value="A02">A02</option>
-                                <option value="A03">A03</option>
-                                <option value="B01">B01</option>
-                                <option value="B02">B02</option>
-                                <option value="B03">B03</option>
-                                <option value="B04">B04</option>
-                            </select>
+                            <label class="mb-2">날씨</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input weather-check" value="맑음"><span>맑음</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input weather-check" value="흐림"><span>흐림</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input weather-check" value="비"><span>비</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input weather-check" value="바람"><span>바람</span></label>
+                            </div>
+                            <input type="hidden" id="inputWeather" name="weather">
                         </div>
+
+                        <!-- 지번 (체크박스) -->
                         <div>
-                            <label for="inputWorkType">작업분류</label>
-                            <input type="text" id="inputWorkType" placeholder="예: 파종, 시비, 수확 (Tab)" list="workTypes">
-                            <datalist id="workTypes">
-                                <option value="파종"><option value="수확"><option value="제초"><option value="방제"><option value="시설보수">
-                            </datalist>
+                            <label class="mb-2">지번 (필지번호)</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="A01"><span>A01</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="A02"><span>A02</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="A03"><span>A03</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="B01"><span>B01</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="B02"><span>B02</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="B03"><span>B03</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input address-check" value="B04"><span>B04</span></label>
+                            </div>
+                            <input type="hidden" id="inputAddress" name="address">
+                        </div>
+
+                        <!-- 작업자 -->
+                        <div>
+                            <label for="inputWorker">작업자</label>
+                            <input type="text" id="inputWorker" placeholder="예: 김철수, 이영희 (Tab)">
                         </div>
                     </div>
                 </div>
@@ -136,43 +166,67 @@
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-tractor"></i> 작업 상세</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- 작업 분류 (체크박스) - 전체 너비 사용 -->
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="mb-2">작업 분류</label>
+                            <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="경운"><span>경운</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="정지"><span>정지</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="정식"><span>정식</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="관수"><span>관수</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="시비"><span>시비</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="제초"><span>제초</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="전정"><span>전정</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="유인"><span>유인</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="적과"><span>적과</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="적엽"><span>적엽</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="방제"><span>방제</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="수확"><span>수확</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="선별"><span>선별</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="포장"><span>포장</span></label>
+                                <label class="checkbox-label"><input type="checkbox" class="checkbox-input worktype-check" value="기타"><span>기타</span></label>
+                            </div>
+                            <input type="hidden" id="inputWorkType" name="workType">
+                        </div>
+
+                        <!-- 자재/작물, 면적, 수량 -->
                         <div class="col-span-1 md:col-span-2">
                             <label for="inputCrop">자재 / 작물명</label>
-                            <input type="text" id="inputCrop" placeholder="예: 고추, 복합비료 (Tab)">
+                            <!-- 🟢 [수정] Placeholder 변경 -->
+                            <input type="text" id="inputCrop" placeholder="작업이 이루어진 작물명 또는 농자재명을 모두 기록하세요. (Tab)">
                         </div>
                         <div>
                             <label for="inputArea">면적 (ha)</label>
-                            <input type="number" step="0.01" id="inputArea" placeholder="예: 0.5 (Tab)">
+                            <!-- 🟢 [수정] 위아래 화살표 강제 표시 -->
+                            <input type="number" step="0.01" id="inputArea" placeholder="0.5">
                         </div>
                         <div>
                             <label for="inputQty">수량 (kg)</label>
-                            <input type="number" id="inputQty" placeholder="예: 100 (Tab)">
+                            <input type="number" id="inputQty" placeholder="100">
                         </div>
-                    </div>
-                </div>
 
-                <!-- 3. 투입 자원 -->
-                <div class="material-section">
-                    <div class="section-heading"><i class="fas fa-users"></i> 투입 자원</div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 인원, 시간 -->
                         <div>
                             <label for="inputPersonnel">인원 (명)</label>
-                            <input type="number" id="inputPersonnel" placeholder="예: 3 (Tab)">
+                            <input type="number" id="inputPersonnel" placeholder="3">
                         </div>
                         <div>
                             <label for="inputTime">작업 시간 (h)</label>
-                            <input type="number" step="0.5" id="inputTime" placeholder="예: 4 (Tab)">
+                            <input type="number" step="0.5" id="inputTime" placeholder="4">
                         </div>
+
+                        <!-- 메모 -->
                         <div class="col-span-1 md:col-span-2">
-                            <label for="inputWorker">작업자 명단</label>
-                            <input type="text" id="inputWorker" placeholder="예: 김철수, 이영희 (Tab)">
+                            <label for="inputMemo">상세메모</label>
+                            <textarea id="inputMemo" rows="3" placeholder="특이사항 기록 (Tab)"></textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. 장비 및 메모 -->
+                <!-- 3. 사용 자원 -->
                 <div class="material-section">
-                    <div class="section-heading"><i class="fas fa-tools"></i> 기타 정보</div>
+                    <div class="section-heading"><i class="fas fa-tools"></i> 사용 자원</div>
                     <div class="grid grid-cols-1 gap-4">
                         <div>
                             <label for="inputEquipment">사용 장비</label>
@@ -181,10 +235,6 @@
                         <div>
                             <label for="inputSubEquipment">보조 장비</label>
                             <input type="text" id="inputSubEquipment" placeholder="예: 관리기 (Tab)">
-                        </div>
-                        <div>
-                            <label for="inputMemo">메모</label>
-                            <textarea id="inputMemo" rows="3" placeholder="특이사항 기록 (Tab)"></textarea>
                         </div>
                     </div>
                 </div>
@@ -195,15 +245,12 @@
         <div id="output-tab-content" class="tab-content">
             <div class="flex justify-between items-center mb-4 no-print">
                 <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-file-alt text-green-600 mr-2"></i>일지 미리보기</h2>
-                
-                <!-- 🟢 [변경] onclick 이벤트 수정: window.print() -> sharePdfViaTelegram() -->
                 <button onclick="sharePdfViaTelegram()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 shadow-md transition duration-300 flex items-center">
                     <i class="fas fa-share-alt mr-2"></i>
                     <span>PDF 공유/저장</span>
                 </button>
             </div>
             
-            <!-- 출력 영역 (ID: document-output) -->
             <div id="document-output" class="material-section document-output border-2 border-green-600 bg-white p-4"></div>
         </div>
     </div>
@@ -219,15 +266,12 @@
         const SCRIPT_URL = '여기에_배포된_웹앱_URL을_붙여넣으세요'; 
 
         const formId = 'documentForm';
-        const storageKey = 'bahiya_journal_v2';
+        const storageKey = 'bahiya_journal_v4';
         
-        // 텔레그램 앱 초기화
         const tg = window.Telegram?.WebApp;
-        if(tg) {
-            tg.expand(); // 앱 실행 시 전체 화면 확장
-        }
+        if(tg) { tg.expand(); }
 
-        // 🟢 [추가] PDF 생성 및 공유 함수 (텔레그램/모바일 지원)
+        // PDF 생성 및 공유
         function sharePdfViaTelegram() {
             const element = document.getElementById('document-output');
             const loading = document.getElementById('loadingOverlay');
@@ -236,40 +280,29 @@
             loading.style.display = 'flex';
             loadingText.innerText = 'PDF 생성 중...';
 
-            // 입력된 날짜 가져오기 (파일명용)
             const inputDate = document.getElementById('inputDate').value || '날짜미상';
-            const fileName = `바이야_영농일지_${inputDate}.pdf`;
+            const workerName = document.getElementById('inputWorker').value.trim() || '작업자미상';
+            const fileName = `바이야_영농일지_${inputDate}_${workerName}.pdf`;
 
-            // html2pdf 옵션 설정
             const opt = {
-                margin:       5, // 여백 (mm)
-                filename:     fileName,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true }, // scale: 해상도 2배, useCORS: 이미지 로딩 허용
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                margin: 5,
+                filename: fileName,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // PDF 생성 시작
             html2pdf().set(opt).from(element).output('blob').then(function(blob) {
                 const file = new File([blob], fileName, { type: "application/pdf" });
-
-                // 브라우저 공유 API (모바일/텔레그램 미니앱 지원)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     loadingText.innerText = '공유창을 여는 중...';
                     navigator.share({
                         files: [file],
                         title: '바이야 영농일지',
-                        text: `${inputDate} 영농일지 파일입니다.`
-                    }).then(() => {
-                        loading.style.display = 'none';
-                    }).catch((error) => {
-                        console.log('공유 실패:', error);
-                        loading.style.display = 'none';
-                        // 공유 취소 등의 에러는 무시하거나 알림
-                    });
+                        text: `${inputDate} 영농일지 (${workerName})`
+                    }).then(() => loading.style.display = 'none').catch(e => { console.log(e); loading.style.display = 'none'; });
                 } else {
-                    // 공유 API 미지원 환경(PC 등)에서는 다운로드로 대체
-                    loadingText.innerText = '파일 다운로드 중...';
+                    loadingText.innerText = '다운로드 중...';
                     const link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
                     link.download = fileName;
@@ -277,8 +310,7 @@
                     loading.style.display = 'none';
                 }
             }).catch(err => {
-                console.error(err);
-                alert('PDF 생성 중 오류가 발생했습니다.');
+                alert('오류 발생');
                 loading.style.display = 'none';
             });
         }
@@ -300,7 +332,16 @@
             }
         }
 
-        // 로컬 저장/로드
+        // 체크박스 통합 관리 로직
+        function updateCheckboxGroup(className, hiddenInputId) {
+            const checkboxes = document.querySelectorAll(`.${className}:checked`);
+            const values = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById(hiddenInputId).value = values.join(', ');
+            saveFormDataToLocalStorage();
+            generateDocument();
+        }
+
+        // 로컬 저장
         function saveFormDataToLocalStorage() {
             const formData = {};
             const elements = document.getElementById(formId).elements;
@@ -309,44 +350,60 @@
             }
             localStorage.setItem(storageKey, JSON.stringify(formData));
         }
+
+        // 로컬 로드
         function loadFormDataFromLocalStorage() {
             const storedData = localStorage.getItem(storageKey);
             if (storedData) {
                 const formData = JSON.parse(storedData);
                 for (const key in formData) {
                     const element = document.getElementById(key);
-                    if (element) element.value = formData[key];
+                    if (element) {
+                        element.value = formData[key];
+                        
+                        // 체크박스 상태 복원
+                        if(key === 'inputAddress') syncCheckboxes('address-check', formData[key]);
+                        if(key === 'inputWeather') syncCheckboxes('weather-check', formData[key]);
+                        if(key === 'inputWorkType') syncCheckboxes('worktype-check', formData[key]);
+                    }
                 }
             } else {
                 document.getElementById('inputDate').valueAsDate = new Date();
             }
         }
 
-        // 데이터 전송 (GAS 연동)
+        function syncCheckboxes(className, commaString) {
+            const values = commaString.split(', ');
+            document.querySelectorAll(`.${className}`).forEach(cb => {
+                cb.checked = values.includes(cb.value);
+            });
+        }
+
+        // 데이터 전송
         function sendToGoogleSheet() {
             if (!SCRIPT_URL || SCRIPT_URL.includes('여기에')) {
-                alert('스크립트 코드를 열어 SCRIPT_URL 변수에 GAS 웹 앱 주소를 입력해주세요!');
+                alert('SCRIPT_URL을 설정해주세요!');
                 return;
             }
-            
             const loading = document.getElementById('loadingOverlay');
-            const loadingText = document.getElementById('loadingText');
             loading.style.display = 'flex';
-            loadingText.innerText = '구글 시트로 전송 중...';
 
             const payload = {
                 '날짜': document.getElementById('inputDate').value,
+                '날씨': document.getElementById('inputWeather').value,
+                '작업자': document.getElementById('inputWorker').value,
                 '지번': document.getElementById('inputAddress').value,
+                
                 '작업분류': document.getElementById('inputWorkType').value,
                 '자재/작물명': document.getElementById('inputCrop').value,
                 '면적': document.getElementById('inputArea').value,
                 '수량': document.getElementById('inputQty').value,
                 '인원': document.getElementById('inputPersonnel').value,
                 '시간': document.getElementById('inputTime').value,
-                '작업자': document.getElementById('inputWorker').value,
+                '메모': document.getElementById('inputMemo').value,
+
                 '사용장비': document.getElementById('inputEquipment').value,
-                '보조장비': document.getElementById('inputSubEquipment').value,
-                '메모': document.getElementById('inputMemo').value
+                '보조장비': document.getElementById('inputSubEquipment').value
             };
 
             fetch(SCRIPT_URL, {
@@ -355,85 +412,66 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(() => {
-                loading.style.display = 'none';
-                alert('✅ 구글 시트에 성공적으로 저장되었습니다!');
-            })
-            .catch(error => {
-                loading.style.display = 'none';
-                console.error('Error:', error);
-                alert('❌ 전송 실패: 인터넷 연결이나 스크립트 주소를 확인하세요.');
-            });
+            .then(() => { loading.style.display = 'none'; alert('전송 완료!'); })
+            .catch(e => { loading.style.display = 'none'; alert('전송 실패'); });
         }
 
         // 문서 생성 (미리보기)
         function generateDocument() {
             const getVal = (id) => document.getElementById(id).value || '-';
             const html = `
-                <div class="text-center mb-8 border-b-2 border-green-600 pb-4">
+                <div class="text-center mb-6 border-b-2 border-green-600 pb-4">
                     <h1 class="text-3xl font-bold font-serif text-gray-900 mb-2">영 농 일 지</h1>
                 </div>
-                <div class="flex justify-between items-end mb-4">
-                    <div><strong>일자:</strong> ${getVal('inputDate')}</div>
-                    <div><strong>장소:</strong> ${getVal('inputAddress')}</div>
-                </div>
-                <table class="journal-table">
-                    <tr><th>작업 분류</th><td class="font-bold text-green-700">${getVal('inputWorkType')}</td></tr>
-                    <tr><th>지번 (장소)</th><td>${getVal('inputAddress')}</td></tr>
-                    <tr><th>자재/작물명</th><td>${getVal('inputCrop')}</td></tr>
-                    <tr><th>면적/수량</th><td>${getVal('inputArea')} ha / ${getVal('inputQty')} kg</td></tr>
-                    <tr><th>투입 인원/시간</th><td>${getVal('inputPersonnel')} 명 / ${getVal('inputTime')} h</td></tr>
-                    <tr><th>작업자</th><td>${getVal('inputWorker')}</td></tr>
-                    <tr><th>사용 장비</th><td>${getVal('inputEquipment')} / ${getVal('inputSubEquipment')}</td></tr>
+                
+                <!-- 기본 정보 -->
+                <table class="journal-table mb-4">
+                    <tr>
+                        <th>일자</th><td>${getVal('inputDate')}</td>
+                        <th>날씨</th><td>${getVal('inputWeather')}</td>
+                    </tr>
+                    <tr>
+                        <th>작업자</th><td>${getVal('inputWorker')}</td>
+                        <th>지번</th><td>${getVal('inputAddress')}</td>
+                    </tr>
                 </table>
-                <div class="mt-4 font-bold">메모</div>
-                <div class="border p-2 bg-gray-50 min-h-[100px] mt-1">${document.getElementById('inputMemo').value}</div>
+
+                <!-- 작업 상세 -->
+                <div class="font-bold text-lg mb-1 border-l-4 border-green-500 pl-2">작업 상세</div>
+                <table class="journal-table mb-4">
+                    <tr><th>작업 분류</th><td colspan="3" class="font-bold text-green-700">${getVal('inputWorkType')}</td></tr>
+                    <tr><th>자재/작물명</th><td colspan="3">${getVal('inputCrop')}</td></tr>
+                    <tr>
+                        <th>면적 (ha)</th><td>${getVal('inputArea')}</td>
+                        <th>수량 (kg)</th><td>${getVal('inputQty')}</td>
+                    </tr>
+                    <tr>
+                        <th>인원 (명)</th><td>${getVal('inputPersonnel')}</td>
+                        <th>시간 (h)</th><td>${getVal('inputTime')}</td>
+                    </tr>
+                    <tr><th>메모</th><td colspan="3">${getVal('inputMemo')}</td></tr>
+                </table>
+
+                <!-- 사용 자원 -->
+                <div class="font-bold text-lg mb-1 border-l-4 border-green-500 pl-2">사용 자원</div>
+                <table class="journal-table">
+                    <tr><th>사용 장비</th><td>${getVal('inputEquipment')}</td></tr>
+                    <tr><th>보조 장비</th><td>${getVal('inputSubEquipment')}</td></tr>
+                </table>
             `;
             document.getElementById('document-output').innerHTML = html;
         }
 
-        // 데이터 다운로드
-        function downloadDataFile() {
-            const storedData = localStorage.getItem(storageKey);
-            if (!storedData) { alert("저장할 데이터가 없습니다."); return; }
-            const data = JSON.parse(storedData);
-            const date = data.inputDate || '날짜미상';
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `바이야_영농일지_${date}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // 데이터 업로드
-        function uploadDataFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    for (const key in data) {
-                        const element = document.getElementById(key);
-                        if (element) element.value = data[key];
-                    }
-                    saveFormDataToLocalStorage();
-                    alert("데이터 로드 완료");
-                    generateDocument();
-                    event.target.value = '';
-                } catch (error) { alert("파일 오류"); }
-            };
-            reader.readAsText(file);
-        }
+        // 다운로드/업로드 함수 (생략: 기존 유지)
+        function downloadDataFile() { /* 기존 코드 유지 */ const data = localStorage.getItem(storageKey); if(!data) return; const blob = new Blob([data], {type:'application/json'}); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`영농일지_${JSON.parse(data).inputDate}.json`; a.click(); }
+        function uploadDataFile(e) { const r = new FileReader(); r.onload = (ev) => { try { const d = JSON.parse(ev.target.result); for(let k in d) { const el = document.getElementById(k); if(el) el.value = d[k]; } loadFormDataFromLocalStorage(); generateDocument(); alert('로드 완료'); } catch { alert('오류'); } }; if(e.target.files[0]) r.readAsText(e.target.files[0]); }
 
         // 초기화
         document.addEventListener('DOMContentLoaded', () => {
             loadFormDataFromLocalStorage();
             
-            // 입력 필드 Tab 키 리스너 및 자동 저장
-            document.querySelectorAll('input, textarea').forEach(el => {
+            // Tab 키 & Input 리스너
+            document.querySelectorAll('input:not([type=checkbox]):not([type=hidden]), textarea').forEach(el => {
                 el.addEventListener('keydown', function(e) {
                     if (e.key === 'Tab' && !e.shiftKey && this.value === '' && this.placeholder) {
                         e.preventDefault();
@@ -444,13 +482,17 @@
                 });
                 el.addEventListener('input', () => { saveFormDataToLocalStorage(); generateDocument(); });
             });
-            document.getElementById('inputAddress').addEventListener('change', () => { saveFormDataToLocalStorage(); generateDocument(); });
 
-            // 버튼 이벤트
+            // 체크박스 그룹 리스너 등록
+            document.querySelectorAll('.address-check').forEach(cb => cb.addEventListener('change', () => updateCheckboxGroup('address-check', 'inputAddress')));
+            document.querySelectorAll('.weather-check').forEach(cb => cb.addEventListener('change', () => updateCheckboxGroup('weather-check', 'inputWeather')));
+            document.querySelectorAll('.worktype-check').forEach(cb => cb.addEventListener('change', () => updateCheckboxGroup('worktype-check', 'inputWorkType')));
+
+            // 버튼
             document.getElementById('sendToSheetButton').addEventListener('click', sendToGoogleSheet);
             document.getElementById('saveFileButton').addEventListener('click', downloadDataFile);
             document.getElementById('loadFile').addEventListener('change', uploadDataFile);
-            document.getElementById('clearFormButton').addEventListener('click', () => { if(confirm('초기화하시겠습니까?')) { document.getElementById(formId).reset(); localStorage.removeItem(storageKey); document.getElementById('inputDate').valueAsDate = new Date(); generateDocument(); }});
+            document.getElementById('clearFormButton').addEventListener('click', () => { if(confirm('초기화?')) { document.getElementById(formId).reset(); localStorage.removeItem(storageKey); document.getElementById('inputDate').valueAsDate = new Date(); generateDocument(); }});
         });
     </script>
 </body>
