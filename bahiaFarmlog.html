@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <style>
-        /* 기존 스타일과 동일 (생략 가능하나 전체 동작을 위해 유지) */
+        /* 기본 폰트 및 테마 설정 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
 
@@ -24,22 +24,36 @@
         }
 
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; color: #1f2937; padding-bottom: 80px; font-size: 16px; }
+        
+        /* 그라디언트 헤더 */
         .gradient-header-bg { background: linear-gradient(135deg, var(--accent-color-start), var(--accent-color-end)); position: relative; overflow: hidden; color: white; padding: 2rem 1.5rem; border-bottom-left-radius: 1.5rem; border-bottom-right-radius: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .gradient-header-bg::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: var(--header-bg-image); background-position: var(--header-bg-position); background-size: var(--header-bg-size); opacity: var(--header-bg-opacity); mix-blend-mode: var(--header-mix-blend-mode); pointer-events: none; }
+        
+        /* 카드 섹션 */
         .material-section { background-color: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(0,0,0,0.05); }
         .section-heading { font-family: 'Noto Sans KR', sans-serif; font-weight: 700; color: #1f2937; border-bottom: 2px solid var(--accent-color-light); padding-bottom: 0.5rem; margin-bottom: 1.25rem; font-size: 1.125rem; display: flex; align-items: center; }
         .section-heading i { margin-right: 0.5rem; color: var(--accent-color); }
+        
+        /* 입력 폼 스타일 */
         label { font-weight: 600; color: #374151; margin-bottom: 0.25rem; display: block; font-size: 0.95rem; }
-        input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem; transition: all 0.2s; background-color: #f9fafb; }
+        input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 1rem; transition: all 0.2s; background-color: #f9fafb; appearance: none; }
+        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-light); background-color: white; }
+        
+        /* 하단 내비게이션 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; z-index: 50; height: 70px; }
         .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #6b7280; font-weight: 500; font-size: 0.9rem; transition: all 0.3s; border-top: 3px solid transparent; }
         .nav-btn.active { color: var(--accent-color); background-color: #f0fdf4; border-top-color: var(--accent-color); }
         .nav-btn i { font-size: 1.4rem; margin-bottom: 4px; }
+        
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 인쇄 설정 */
         @media print { body { padding-bottom: 0; background-color: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .no-print, .bottom-nav, #input-tab-content { display: none !important; } #output-tab-content { display: block !important; } .material-section { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; } .gradient-header-bg { background: linear-gradient(135deg, #10B981, #047857) !important; -webkit-print-color-adjust: exact !important; } .gradient-header-bg::before { opacity: 0.1 !important; mix-blend-mode: normal !important; } }
+        
+        /* 테이블 스타일 */
         .journal-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .journal-table th, .journal-table td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; }
         .journal-table th { background-color: #f3f4f6; color: #374151; font-weight: 600; width: 30%; }
@@ -55,14 +69,17 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- 헤더 영역 -->
     <header class="gradient-header-bg text-center mb-6">
-        <h1 class="text-3xl font-bold font-playfair mb-2"><i class="fas fa-seedling mr-2"></i>바이야 영농일지</h1>
+        <h1 class="text-3xl font-bold font-playfair mb-2"><i class="fas fa-seedling mr-2"></i>파젠다 바이야 영농일지</h1>
         <p class="text-green-100 text-sm opacity-90">스마트 기록 및 클라우드 연동</p>
     </header>
 
     <div class="max-w-3xl mx-auto px-4">
+        <!-- 탭 1: 자료 입력 -->
         <div id="input-tab-content" class="tab-content active pb-4">
             
+            <!-- 파일 및 클라우드 관리 -->
             <div class="material-section">
                 <div class="section-heading"><i class="fas fa-cloud-upload-alt"></i> 데이터 관리</div>
                 <div class="flex flex-col gap-3">
@@ -78,6 +95,7 @@
             </div>
 
             <form id="documentForm">
+                <!-- 1. 기본 정보 -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-calendar-day"></i> 기본 정보</div>
                     <div class="grid grid-cols-1 gap-4">
@@ -86,8 +104,8 @@
                             <input type="date" id="inputDate" name="date" class="w-full">
                         </div>
                         <div>
-                            <label for="inputAddress">지번 (장소) 선택</label>
-                            <select id="inputAddress" class="w-full h-12">
+                            <label for="inputAddress">지번 (필지번호) 선택</label>
+                            <select id="inputAddress" class="w-full h-12 border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50">
                                 <option value="" disabled selected>필지번호를 선택하세요</option>
                                 <option value="A01">A01</option>
                                 <option value="A02">A02</option>
@@ -108,6 +126,7 @@
                     </div>
                 </div>
 
+                <!-- 2. 작업 상세 (기존과 동일) -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-tractor"></i> 작업 상세</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -126,6 +145,7 @@
                     </div>
                 </div>
 
+                <!-- 3. 투입 자원 (기존과 동일) -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-users"></i> 투입 자원</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -144,6 +164,7 @@
                     </div>
                 </div>
 
+                <!-- 4. 장비 및 메모 (기존과 동일) -->
                 <div class="material-section">
                     <div class="section-heading"><i class="fas fa-tools"></i> 기타 정보</div>
                     <div class="grid grid-cols-1 gap-4">
@@ -164,6 +185,7 @@
             </form>
         </div>
 
+        <!-- 탭 2: 영농일지 출력 -->
         <div id="output-tab-content" class="tab-content">
             <div class="flex justify-between items-center mb-4 no-print">
                 <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-file-alt text-green-600 mr-2"></i>일지 미리보기</h2>
@@ -173,17 +195,18 @@
         </div>
     </div>
 
+    <!-- 하단 내비게이션 -->
     <nav class="bottom-nav no-print">
         <button class="nav-btn active" onclick="switchTab('input')"><i class="fas fa-edit"></i><span>자료입력</span></button>
         <button class="nav-btn" onclick="switchTab('output')"><i class="fas fa-book-open"></i><span>영농일지</span></button>
     </nav>
 
     <script>
-        // 🚨 여기에 배포한 Google Apps Script의 웹 앱 URL을 붙여넣으세요 🚨
+        // 🚨 중요: 배포 후 발급받은 GAS 웹 앱 URL을 아래에 입력해야 '시트로 전송'이 작동합니다.
         const SCRIPT_URL = '여기에_배포된_웹앱_URL을_붙여넣으세요'; 
 
         const formId = 'documentForm';
-        const storageKey = 'bahiya_journal_data_v2';
+        const storageKey = 'bahiya_journal_v2';
 
         // 탭 전환
         function switchTab(tabName) {
@@ -234,7 +257,7 @@
             const loading = document.getElementById('loadingOverlay');
             loading.style.display = 'flex';
 
-            // 전송할 데이터 객체 생성 (GAS 코드의 헤더명과 매칭될 키 값)
+            // 전송할 데이터 객체 생성
             const payload = {
                 '날짜': document.getElementById('inputDate').value,
                 '지번': document.getElementById('inputAddress').value,
@@ -252,7 +275,7 @@
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors', // GAS 웹앱은 no-cors 모드로 전송해야 함
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
@@ -280,6 +303,7 @@
                 </div>
                 <table class="journal-table">
                     <tr><th>작업 분류</th><td class="font-bold text-green-700">${getVal('inputWorkType')}</td></tr>
+                    <tr><th>지번 (장소)</th><td>${getVal('inputAddress')}</td></tr>
                     <tr><th>자재/작물명</th><td>${getVal('inputCrop')}</td></tr>
                     <tr><th>면적/수량</th><td>${getVal('inputArea')} ha / ${getVal('inputQty')} kg</td></tr>
                     <tr><th>투입 인원/시간</th><td>${getVal('inputPersonnel')} 명 / ${getVal('inputTime')} h</td></tr>
@@ -292,27 +316,65 @@
             document.getElementById('document-output').innerHTML = html;
         }
 
+        // 데이터 다운로드
+        function downloadDataFile() {
+            const storedData = localStorage.getItem(storageKey);
+            if (!storedData) { alert("저장할 데이터가 없습니다."); return; }
+            const data = JSON.parse(storedData);
+            const date = data.inputDate || '날짜미상';
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `바이야_영농일지_${date}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 데이터 업로드
+        function uploadDataFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    for (const key in data) {
+                        const element = document.getElementById(key);
+                        if (element) element.value = data[key];
+                    }
+                    saveFormDataToLocalStorage();
+                    alert("데이터 로드 완료");
+                    generateDocument();
+                    event.target.value = '';
+                } catch (error) { alert("파일 오류"); }
+            };
+            reader.readAsText(file);
+        }
+
         // 초기화
         document.addEventListener('DOMContentLoaded', () => {
             loadFormDataFromLocalStorage();
             
-            // 입력 필드 Tab 키 리스너 등록
+            // 입력 필드 Tab 키 리스너 및 자동 저장
             document.querySelectorAll('input, textarea').forEach(el => {
                 el.addEventListener('keydown', function(e) {
                     if (e.key === 'Tab' && !e.shiftKey && this.value === '' && this.placeholder) {
                         e.preventDefault();
                         this.value = this.placeholder.replace('예: ', '').replace(' (Tab)', '');
                         saveFormDataToLocalStorage();
+                        generateDocument();
                     }
                 });
-                el.addEventListener('input', saveFormDataToLocalStorage);
+                el.addEventListener('input', () => { saveFormDataToLocalStorage(); generateDocument(); });
             });
-            document.getElementById('inputAddress').addEventListener('change', saveFormDataToLocalStorage);
+            document.getElementById('inputAddress').addEventListener('change', () => { saveFormDataToLocalStorage(); generateDocument(); });
 
             // 버튼 이벤트
             document.getElementById('sendToSheetButton').addEventListener('click', sendToGoogleSheet);
-            document.getElementById('saveFileButton').addEventListener('click', () => { /* 기존 다운로드 로직 생략 */ alert('기능이 유지됩니다.'); });
-            document.getElementById('clearFormButton').addEventListener('click', () => { if(confirm('초기화?')) { document.getElementById(formId).reset(); localStorage.removeItem(storageKey); }});
+            document.getElementById('saveFileButton').addEventListener('click', downloadDataFile);
+            document.getElementById('loadFile').addEventListener('change', uploadDataFile);
+            document.getElementById('clearFormButton').addEventListener('click', () => { if(confirm('초기화하시겠습니까?')) { document.getElementById(formId).reset(); localStorage.removeItem(storageKey); document.getElementById('inputDate').valueAsDate = new Date(); generateDocument(); }});
         });
     </script>
 </body>
