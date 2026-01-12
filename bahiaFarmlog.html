@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>바이야 영농일지 (v6) 🌿</title>
+    <title>바이야 영농일지 (v7) 🌿</title>
     <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -164,7 +164,7 @@
                     <div class="section-heading"><i class="fas fa-tractor"></i> 작업 상세</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         
-                        <!-- 🟢 [수정] 지번 (필지번호) - 여기로 이동됨 -->
+                        <!-- 지번 (필지번호) -->
                         <div class="col-span-1 md:col-span-2">
                             <label class="mb-2">지번 (필지번호)</label>
                             <div class="grid grid-cols-4 gap-2">
@@ -209,7 +209,6 @@
                         </div>
                         <div>
                             <label for="inputArea">면적 (ha)</label>
-                            <!-- 🟢 [수정] step 0.1로 변경하여 스피너 클릭 시 0.1씩 증감 -->
                             <input type="number" step="0.1" id="inputArea" placeholder="0.5">
                         </div>
                         <div>
@@ -229,7 +228,7 @@
 
                         <!-- 메모 -->
                         <div class="col-span-1 md:col-span-2">
-                            <label for="inputMemo">상세내역</label>
+                            <label for="inputMemo">상세메모</label>
                             <textarea id="inputMemo" rows="3" placeholder="특이사항 기록 (Tab)"></textarea>
                         </div>
                     </div>
@@ -256,9 +255,10 @@
         <div id="output-tab-content" class="tab-content">
             <div class="flex justify-between items-center mb-4 no-print">
                 <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-file-alt text-green-600 mr-2"></i>일지 미리보기</h2>
+                <!-- 🟢 [변경] PDF 공유/저장 버튼 클릭 시 sharePdfViaTelegram 호출 -->
                 <button onclick="sharePdfViaTelegram()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 shadow-md transition duration-300 flex items-center">
                     <i class="fas fa-share-alt mr-2"></i>
-                    <span>PDF 공유/저장</span>
+                    <span>PDF 공유/저장 (시트전송)</span>
                 </button>
             </div>
             
@@ -277,43 +277,102 @@
         const SCRIPT_URL = '여기에_배포된_웹앱_URL을_붙여넣으세요'; 
 
         const formId = 'documentForm';
-        const storageKey = 'bahiya_journal_v6';
+        const storageKey = 'bahiya_journal_v7';
         
         const tg = window.Telegram?.WebApp;
         if(tg) { tg.expand(); }
 
-        // PDF 생성 전 유효성 검사 함수
+        // 🟢 [추가] 상세 유효성 검사 함수 (구체적인 항목명 알림)
         function validateForm() {
-            const requiredIds = [
-                'inputDate', 'inputWeather', 'inputAddress', 'inputWorker',
-                'inputWorkType', 'inputCrop', 'inputArea', 'inputQty',
-                'inputPersonnel', 'inputTime', 'inputMemo',
-                'inputEquipment', 'inputSubEquipment'
-            ];
+            // ID와 한글 표시명의 매핑
+            const fieldLabels = {
+                'inputDate': '날짜',
+                'inputWeather': '날씨',
+                'inputWorker': '작업자',
+                'inputAddress': '지번',
+                'inputWorkType': '작업분류',
+                'inputCrop': '자재/작물명',
+                'inputArea': '면적',
+                'inputQty': '수량',
+                'inputPersonnel': '인원',
+                'inputTime': '작업 시간',
+                'inputMemo': '상세메모',
+                'inputEquipment': '사용 장비',
+                'inputSubEquipment': '보조 장비'
+            };
             
-            for (const id of requiredIds) {
+            for (const [id, label] of Object.entries(fieldLabels)) {
                 const el = document.getElementById(id);
+                // 값이 없거나 공백만 있는 경우
                 if (!el || !el.value.trim()) {
+                    alert(`${label}을(를) 채워주세요.`);
+                    
+                    // 해당 필드가 있는 탭으로 이동 (혹시 다른 탭에 있을 경우를 대비해 input 탭 활성화)
+                    if (document.getElementById('output-tab-content').classList.contains('active')) {
+                        switchTab('input');
+                    }
+
+                    // 숨겨진 input(체크박스 그룹 등)이 아니면 포커스 이동
+                    if (el.type !== 'hidden') {
+                        el.focus();
+                    } else {
+                        // 히든 필드(체크박스)인 경우 해당 섹션으로 스크롤
+                        const section = el.closest('.material-section');
+                        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                     return false;
                 }
             }
             return true;
         }
 
-        // PDF 생성 및 공유
+        // 🟢 [수정] PDF 생성 및 공유 함수 (시트 전송 포함)
         function sharePdfViaTelegram() {
-            if (!validateForm()) {
-                alert("빈항목을 채워주세요");
-                return;
-            }
+            // 1. 유효성 검사
+            if (!validateForm()) return;
 
             const element = document.getElementById('document-output');
             const loading = document.getElementById('loadingOverlay');
             const loadingText = document.getElementById('loadingText');
             
             loading.style.display = 'flex';
-            loadingText.innerText = 'PDF 생성 중...';
+            loadingText.innerText = '구글 시트 전송 중...';
 
+            // 2. 구글 시트로 데이터 전송 (자동 실행)
+            const payload = {
+                '날짜': document.getElementById('inputDate').value,
+                '날씨': document.getElementById('inputWeather').value,
+                '작업자': document.getElementById('inputWorker').value,
+                '지번': document.getElementById('inputAddress').value,
+                '작업분류': document.getElementById('inputWorkType').value,
+                '자재/작물명': document.getElementById('inputCrop').value,
+                '면적': document.getElementById('inputArea').value,
+                '수량': document.getElementById('inputQty').value,
+                '인원': document.getElementById('inputPersonnel').value,
+                '시간': document.getElementById('inputTime').value,
+                '메모': document.getElementById('inputMemo').value,
+                '사용장비': document.getElementById('inputEquipment').value,
+                '보조장비': document.getElementById('inputSubEquipment').value
+            };
+
+            // fetch는 비동기이므로, 전송 요청 후 바로 PDF 생성으로 넘어갑니다.
+            // (전송 실패해도 PDF는 생성되도록 함, 성공 여부는 별도 알림)
+            if (SCRIPT_URL && !SCRIPT_URL.includes('여기에')) {
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(() => {
+                    console.log("시트 전송 완료");
+                }).catch(e => console.error("시트 전송 실패", e));
+            } else {
+                console.warn("SCRIPT_URL 미설정으로 시트 전송 건너뜀");
+            }
+
+            // 3. PDF 생성 시작
+            loadingText.innerText = 'PDF 생성 중...';
+            
             const inputDate = document.getElementById('inputDate').value || '날짜미상';
             const workerName = document.getElementById('inputWorker').value.trim() || '작업자미상';
             const fileName = `바이야_영농일지_${inputDate}_${workerName}.pdf`;
@@ -328,6 +387,8 @@
 
             html2pdf().set(opt).from(element).output('blob').then(function(blob) {
                 const file = new File([blob], fileName, { type: "application/pdf" });
+                
+                // 모바일 공유 기능 사용
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     loadingText.innerText = '공유창을 여는 중...';
                     navigator.share({
@@ -336,6 +397,7 @@
                         text: `${inputDate} 영농일지 (${workerName})`
                     }).then(() => loading.style.display = 'none').catch(e => { console.log(e); loading.style.display = 'none'; });
                 } else {
+                    // PC 등 공유 미지원 시 다운로드
                     loadingText.innerText = '다운로드 중...';
                     const link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
@@ -344,7 +406,7 @@
                     loading.style.display = 'none';
                 }
             }).catch(err => {
-                alert('오류 발생');
+                alert('PDF 생성 중 오류 발생');
                 loading.style.display = 'none';
             });
         }
@@ -411,8 +473,10 @@
             });
         }
 
-        // 데이터 전송
+        // 🟢 [수정] 데이터 전송 (버튼 클릭용) - 유효성 검사 추가
         function sendToGoogleSheet() {
+            if (!validateForm()) return; // 유효성 검사 통과 못하면 중단
+
             if (!SCRIPT_URL || SCRIPT_URL.includes('여기에')) {
                 alert('SCRIPT_URL을 설정해주세요!');
                 return;
@@ -477,7 +541,7 @@
                         <th>인원 (명)</th><td>${getVal('inputPersonnel')}</td>
                         <th>시간 (h)</th><td>${getVal('inputTime')}</td>
                     </tr>
-                    <tr><th>상세내역</th><td colspan="3">${getVal('inputMemo')}</td></tr>
+                    <tr><th>상세메모</th><td colspan="3">${getVal('inputMemo')}</td></tr>
                 </table>
 
                 <div class="font-bold text-lg mb-1 border-l-4 border-green-500 pl-2">사용 자원</div>
@@ -489,16 +553,28 @@
             document.getElementById('document-output').innerHTML = html;
         }
 
-        // 다운로드/업로드 함수
+        // 🟢 [수정] 백업 데이터 다운로드 (파일명 포맷 변경: yymmdd_작업자)
         function downloadDataFile() { 
             const data = localStorage.getItem(storageKey); 
             if(!data) { alert("저장할 데이터가 없습니다."); return; }
+            
+            const parsedData = JSON.parse(data);
+            const rawDate = parsedData.inputDate || ''; // ex: 2023-10-25
+            const worker = parsedData.inputWorker || '작업자미상';
+            
+            // yymmdd 변환
+            let yymmdd = '날짜미상';
+            if (rawDate) {
+                yymmdd = rawDate.replace(/-/g, '').slice(2); // 231025
+            }
+            
             const blob = new Blob([data], {type:'application/json'}); 
             const a = document.createElement('a'); 
             a.href=URL.createObjectURL(blob); 
-            a.download=`영농일지_${JSON.parse(data).inputDate || '날짜미상'}.json`; 
+            a.download=`바이야_영농일지_${yymmdd}_${worker}.json`; 
             a.click(); 
         }
+
         function uploadDataFile(e) { 
             const r = new FileReader(); 
             r.onload = (ev) => { 
@@ -533,7 +609,7 @@
                 el.addEventListener('input', () => { saveFormDataToLocalStorage(); generateDocument(); });
             });
             
-            // 🟢 [추가] 면적(inputArea) 소수점 한 자리 강제 포맷팅 (change 이벤트 시)
+            // 면적 소수점 고정
             const areaInput = document.getElementById('inputArea');
             if(areaInput) {
                 areaInput.addEventListener('change', function() {
